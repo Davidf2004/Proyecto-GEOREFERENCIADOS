@@ -1,0 +1,16 @@
+process.env.PORT = process.env.PORT ?? '3000';
+process.env.MAPBOX_TOKEN = process.env.MAPBOX_TOKEN ?? 'test-mapbox-token';
+process.env.MAILER_EMAIL = process.env.MAILER_EMAIL ?? 'test@example.com';
+process.env.MAILER_PASSWORD = process.env.MAILER_PASSWORD ?? 'test-password';
+process.env.MAILER_SERVICE = process.env.MAILER_SERVICE ?? 'gmail';
+process.env.GENERIC_NOTIFICATION_EMAIL = process.env.GENERIC_NOTIFICATION_EMAIL ?? 'ops@example.com';
+process.env.DB_PASSWORD = process.env.DB_PASSWORD ?? 'postgres';
+process.env.DB_NAME = process.env.DB_NAME ?? 'petradar';
+process.env.DB_PORT = process.env.DB_PORT ?? '5433';
+process.env.DB_HOST = process.env.DB_HOST ?? 'localhost';
+process.env.DB_USERNAME = process.env.DB_USERNAME ?? 'postgres';
+process.env.REDIS_ENABLED = process.env.REDIS_ENABLED ?? 'false';
+process.env.REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
+process.env.REDIS_PORT = process.env.REDIS_PORT ?? '6379';
+process.env.REDIS_TTL_SECONDS = process.env.REDIS_TTL_SECONDS ?? '60';
+process.env.APPLICATIONINSIGHTS_CONNECTION_STRING = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ?? '';

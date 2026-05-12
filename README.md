@@ -1,19 +1,44 @@
-## DFonsecaPetsRadar (NestJS)
+# DFonsecaPetsRadar
 
-API REST construida con NestJS y TypeORM sobre PostgreSQL + PostGIS para registrar mascotas perdidas y mascotas encontradas.
+API REST en NestJS para registrar mascotas perdidas y encontradas sobre PostgreSQL + PostGIS, con notificaciones por correo, cache con Redis, telemetria en Azure Application Insights, contenerizacion con Docker y publicacion de imagen en GitHub Container Registry.
 
-Cuando se registra una mascota encontrada, el sistema busca automáticamente mascotas perdidas activas (is_active = true) en un radio de 500 metros y envía un correo de notificación con un mapa estático de Mapbox mostrando ambos puntos.
+Todas las rutas quedan bajo el prefijo global `/api`.
 
-### Requisitos
+## Funcionalidad principal
 
-- Node.js y npm
-- PostgreSQL con extensión PostGIS
-- Cuenta de correo (Gmail)
+Cuando se registra una mascota encontrada mediante `POST /api/found-pets`, el sistema:
+
+1. guarda el registro en `found_pets`
+2. busca mascotas perdidas activas (`is_active = true`) dentro de un radio de 500 metros
+3. usa `ST_DWithin` con cast obligatorio a `::geography` para medir la distancia en metros
+4. notifica por correo a los posibles matches encontrados
+
+Tambien se agregaron endpoints cacheados con Redis:
+
+- `GET /api/lost-pets`: lista de mascotas perdidas activas
+- `GET /api/found-pets`: lista de mascotas encontradas
+
+## Requisitos
+
+- Node.js 22+
+- npm 10+
+- Docker y Docker Compose
+- PostgreSQL con PostGIS
+- Cuenta SMTP
 - Token de Mapbox
+- Connection string de Azure Application Insights opcional
 
-### Variables de entorno (.env)
+## Variables de entorno
 
-env
+Puedes copiar `.env.example` a `.env` y ajustar los valores:
+
+```bash
+cp .env.example .env
+```
+
+Variables usadas por la aplicacion:
+
+```env
 PORT=3000
 
 DB_HOST=localhost
@@ -22,178 +47,203 @@ DB_NAME=petradar
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 
-MAPBOX_TOKEN=TU_TOKEN_DE_MAPBOX
+MAPBOX_TOKEN=your-mapbox-token
 
 MAILER_SERVICE=gmail
-MAILER_EMAIL=tu_correo@gmail.com
-MAILER_PASSWORD=tu_password_o_app_password
-GENERIC_NOTIFICATION_EMAIL=notificaciones@petradar.com
+MAILER_EMAIL=your-email@example.com
+MAILER_PASSWORD=your-app-password
+GENERIC_NOTIFICATION_EMAIL=alerts@example.com
 
-### Inicialización de la base de datos
+REDIS_ENABLED=true
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_TTL_SECONDS=60
 
-1. Crear la base de datos en PostgreSQL:
+APPLICATIONINSIGHTS_CONNECTION_STRING=
+```
 
-CREATE DATABASE petradar;
+## Levantar el proyecto con Docker Compose
 
-2. Ejecutar migraciones (crea tablas `incident`, `lost_pets`, `found_pets` y activa PostGIS si no existe):
+Esto levanta PostGIS, Redis y la API:
 
+```bash
+docker compose up --build
+```
+
+La API quedara en `http://localhost:3000/api`.
+
+El contenedor de la app ejecuta migraciones compiladas al arrancar mediante:
+
+```bash
+npm run start:prod:with-migrations
+```
+
+## Levantar el proyecto en local sin Docker para la app
+
+1. Levanta dependencias:
+
+```bash
+docker compose up -d postgres redis
+```
+
+2. Instala dependencias:
+
+```bash
 npm install
+```
+
+3. Ejecuta migraciones:
+
+```bash
 npm run migration:run
+```
 
+4. Levanta la API en modo desarrollo:
+
+```bash
 npm run start:dev
-
-La API quedará disponible en `http://localhost:3000`
-
-### Endpoints principales
-
-#### 1. Registrar mascota perdida
-
-- **POST** /lost-pets
-
-json
-{
-"name": "Firulais",
-"species": "perro",
-"breed": "labrador",
-"color": "negro",
-"size": "mediano",
-"description": "Lleva un collar rojo",
-"photo_url": null,
-"owner_name": "Juan Pérez",
-"owner_email": "juan@example.com",
-"owner_phone": "555-123-4567",
-"address": "Parque central",
-"lost_date": "2026-03-16T10:00:00.000Z",
-"lat": 19.4326,
-"lon": -99.1332
-}
-
-#### 2. Registrar mascota encontrada (búsqueda + correo)
-
-- **POST** `/found-pets`
-
-json
-{
-"species": "perro",
-"breed": "labrador",
-"color": "negro",
-"size": "mediano",
-"description": "Parece asustado pero sano",
-"photo_url": null,
-"finder_name": "María López",
-"finder_email": "maria@example.com",
-"finder_phone": "555-987-6543",
-"address": "Parque central, zona norte",
-"found_date": "2026-03-16T12:30:00.000Z",
-"lat": 19.4327,
-"lon": -99.1331
-}
-
-Al crear una mascota encontrada:
-
-- Se guarda en la tabla `found_pets`.
-- Se ejecuta una query.
-- Por cada coincidencia se envía un correo al dueño de la mascota perdida y, opcionalmente, una copia a un correo genérico configurado con `GENERIC_NOTIFICATION_EMAIL`, con:
-  - Datos de la mascota encontrada
-  - Datos del dueño de la mascota perdida
-  - Datos de contacto de quien encontró la mascota
-  - Un mapa estático de Mapbox con ambos puntos.
-
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
 ```
 
-## Compile and run the project
+## Probar los endpoints
+
+### Registrar mascota perdida
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+curl -X POST http://localhost:3000/api/lost-pets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Firulais",
+    "species": "perro",
+    "breed": "labrador",
+    "color": "negro",
+    "size": "mediano",
+    "description": "Lleva un collar rojo",
+    "photo_url": null,
+    "owner_name": "Juan Perez",
+    "owner_email": "juan@example.com",
+    "owner_phone": "555-123-4567",
+    "address": "Parque central",
+    "lost_date": "2026-03-16T10:00:00.000Z",
+    "lat": 19.4326,
+    "lon": -99.1332
+  }'
 ```
 
-## Run tests
+### Registrar mascota encontrada y disparar busqueda por radio
+
+```bash
+curl -X POST http://localhost:3000/api/found-pets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "species": "perro",
+    "breed": "labrador",
+    "color": "negro",
+    "size": "mediano",
+    "description": "Parece asustado pero sano",
+    "photo_url": null,
+    "finder_name": "Maria Lopez",
+    "finder_email": "maria@example.com",
+    "finder_phone": "555-987-6543",
+    "address": "Parque central, zona norte",
+    "found_date": "2026-03-16T12:30:00.000Z",
+    "lat": 19.4327,
+    "lon": -99.1331
+  }'
+```
+
+La coincidencia se hace con `ST_DWithin(location::geography, ST_SetSRID(ST_MakePoint(...), 4326)::geography, 500)`.
+
+### Consultar listados cacheados con Redis
+
+```bash
+curl http://localhost:3000/api/lost-pets
+curl http://localhost:3000/api/found-pets
+```
+
+Para observar el efecto del cache:
+
+1. llama dos veces seguidas al mismo `GET`
+2. crea un nuevo registro con `POST`
+3. repite el `GET`
+4. verifica que el listado ya incluye el nuevo registro porque el cache se invalida tras cada alta
+
+## Tests
 
 ```bash
 # unit tests
-$ npm run test
+npm run test
 
 # e2e tests
-$ npm run test:e2e
+npm run test:e2e
 
-# test coverage
-$ npm run test:cov
+# cobertura
+npm run test:cov
 ```
 
-## Deployment
+## Build y ejecucion Docker
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Construir imagen:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker build -t dfonsecapetsradar:local .
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Ejecutar imagen local:
 
-## Resources
+```bash
+docker run --rm \
+  --env-file .env \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=5433 \
+  -e REDIS_HOST=host.docker.internal \
+  -e REDIS_PORT=6379 \
+  -p 3000:3000 \
+  dfonsecapetsradar:local \
+  npm run start:prod:with-migrations
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## GitHub Actions y GHCR
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+El workflow vive en `.github/workflows/docker-publish.yml` y realiza:
 
-## Support
+1. `npm ci`
+2. `npm run build`
+3. `npm test -- --runInBand`
+4. build de imagen Docker
+5. login a `ghcr.io`
+6. push a `ghcr.io/<owner>/<repo>`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Se dispara en:
 
-## Stay in touch
+- `push` a `main`
+- ejecucion manual con `workflow_dispatch`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Tags generados:
 
-## License
+- `sha`
+- nombre de rama
+- `latest` en la rama principal
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Application Insights
+
+La telemetria se activa solo si defines:
+
+```env
+APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...;IngestionEndpoint=...
+```
+
+Si la variable esta vacia, la API funciona normalmente sin Application Insights.
+
+## Guion sugerido para el video
+
+1. Mostrar el repositorio y el `README.md`.
+2. Mostrar `.env` ocultando secretos.
+3. Hacer un commit con los cambios.
+4. Hacer push a `main`.
+5. Mostrar la ejecucion del workflow en GitHub Actions.
+6. Mostrar la imagen publicada en `ghcr.io`.
+7. Levantar la API.
+8. Ejecutar un `POST /api/lost-pets`.
+9. Ejecutar un `POST /api/found-pets` con coordenadas a menos de 500 m.
+10. Mostrar el endpoint de busqueda por radio funcionando y la notificacion por correo.
+11. Llamar `GET /api/lost-pets` y `GET /api/found-pets` para ensenar el listado cacheado.

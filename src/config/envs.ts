@@ -1,16 +1,24 @@
-import 'dotenv/config'; 
-import * as env from 'env-var'; 
+import 'dotenv/config';
+import * as env from 'env-var';
 
 export const envs = {
-    PORT: env.get('PORT').required().asPortNumber(),
-    MAPBOX_TOKEN: env.get('MAPBOX_TOKEN').required().asString(),
-    MAILER_EMAIL: env.get('MAILER_EMAIL').required().asString(),
-    MAILER_PASSWORD: env.get('MAILER_PASSWORD').required().asString(),
-    MAILER_SERVICE: env.get('MAILER_SERVICE').required().asString(),
-    GENERIC_NOTIFICATION_EMAIL: env.get('GENERIC_NOTIFICATION_EMAIL').default('').asString(),
-    DB_PASSWORD: env.get('DB_PASSWORD').required().asString(),
-    DB_NAME: env.get('DB_NAME').required().asString(),
-    DB_PORT: env.get('DB_PORT').required().asPortNumber(),
-    DB_HOST: env.get('DB_HOST').required().asString(),
-    DB_USERNAME: env.get('DB_USERNAME').required().asString()
+  PORT: env.get('PORT').required().asPortNumber(),
+  MAPBOX_TOKEN: env.get('MAPBOX_TOKEN').required().asString(),
+  MAILER_EMAIL: env.get('MAILER_EMAIL').required().asString(),
+  MAILER_PASSWORD: env.get('MAILER_PASSWORD').required().asString(),
+  MAILER_SERVICE: env.get('MAILER_SERVICE').required().asString(),
+  GENERIC_NOTIFICATION_EMAIL: env.get('GENERIC_NOTIFICATION_EMAIL').default('').asString(),
+  DB_PASSWORD: env.get('DB_PASSWORD').required().asString(),
+  DB_NAME: env.get('DB_NAME').required().asString(),
+  DB_PORT: env.get('DB_PORT').required().asPortNumber(),
+  DB_HOST: env.get('DB_HOST').required().asString(),
+  DB_USERNAME: env.get('DB_USERNAME').required().asString(),
+  REDIS_ENABLED: env.get('REDIS_ENABLED').default('false').asBoolStrict(),
+  REDIS_HOST: env.get('REDIS_HOST').default('localhost').asString(),
+  REDIS_PORT: env.get('REDIS_PORT').default('6379').asPortNumber(),
+  REDIS_TTL_SECONDS: env.get('REDIS_TTL_SECONDS').default('60').asIntPositive(),
+  APPLICATIONINSIGHTS_CONNECTION_STRING: env
+    .get('APPLICATIONINSIGHTS_CONNECTION_STRING')
+    .default('')
+    .asString(),
 };

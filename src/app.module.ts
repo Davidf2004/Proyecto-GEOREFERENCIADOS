@@ -6,9 +6,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './core/db/datasource';
 import { LostPetsModule } from './lost-pets/lost-pets.module';
 import { FoundPetsModule } from './found-pets/found-pets.module';
+import { AppCacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
+    AppCacheModule,
     EmailModule,
     LostPetsModule,
     FoundPetsModule,

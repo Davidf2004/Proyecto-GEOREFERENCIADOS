@@ -3,13 +3,58 @@ services:
     image: postgis/postgis:16-3.4
     container_name: petradar-postgres
     ports:
-      - 5433:5432
+      - '5433:5432'
     environment:
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data_db:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: petradar-redis
+    ports:
+      - '6379:6379'
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      target: production
+    container_name: petradar-api
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3000}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_ENABLED: 'true'
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TTL_SECONDS: ${REDIS_TTL_SECONDS:-60}
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING:-}
+    command: npm run start:prod:with-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '${PORT:-3000}:3000'
 
 volumes:
   postgres_data_db:

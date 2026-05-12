@@ -9,6 +9,18 @@ import { EmailOptions } from 'src/core/interfaces/mail-options.interface';
 import { envs } from 'src/config/envs';
 import { generatePetMatchEmailTemplate } from './templates/pet-match-email.template';
 import { generateFoundPetReceivedEmailTemplate } from './templates/found-pet-received-email.template';
+import { RedisCacheService } from 'src/cache/cache.service';
+import { FoundPetListItem } from 'src/core/interfaces/pet-list-item.interface';
+
+const FOUND_PETS_CACHE_KEY = 'found-pets:list';
+
+type FoundPetListRow = Omit<FoundPetListItem, 'lat' | 'lon' | 'found_date' | 'created_at' | 'updated_at'> & {
+  lat: number | string;
+  lon: number | string;
+  found_date: Date | string;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
 @Injectable()
 export class FoundPetsService {
@@ -21,6 +33,7 @@ export class FoundPetsService {
     @InjectRepository(LostPet)
     private readonly lostPetsRepository: Repository<LostPet>,
     private readonly emailService: EmailService,
+    private readonly cacheService: RedisCacheService,
   ) {}
 
   async createFoundPet(data: FoundPetCreateDto): Promise<FoundPet> {
@@ -43,10 +56,39 @@ export class FoundPetsService {
     });
 
     const savedFound = await this.foundPetsRepository.save(foundPet);
+    await this.cacheService.del(FOUND_PETS_CACHE_KEY);
 
     await this.notifyMatches(savedFound, data);
 
     return savedFound;
+  }
+
+  async getFoundPets(): Promise<FoundPetListItem[]> {
+    return this.cacheService.getOrSet(FOUND_PETS_CACHE_KEY, async () => {
+      const foundPets = await this.foundPetsRepository.query(`
+        SELECT
+          id,
+          species,
+          breed,
+          color,
+          size,
+          description,
+          photo_url,
+          finder_name,
+          finder_email,
+          finder_phone,
+          address,
+          found_date,
+          created_at,
+          updated_at,
+          ST_Y(location::geometry) AS lat,
+          ST_X(location::geometry) AS lon
+        FROM found_pets
+        ORDER BY found_date DESC, id DESC;
+      `);
+
+      return foundPets.map((foundPet: FoundPetListRow) => this.mapFoundPetListItem(foundPet));
+    });
   }
 
   private async notifyMatches(foundEntity: FoundPet, originalDto: FoundPetCreateDto): Promise<void> {
@@ -102,6 +144,19 @@ export class FoundPetsService {
         this.logger.warn(`Notification email could not be sent for lost pet ${lost.id}`);
       }
     }
+  }
+
+  private mapFoundPetListItem(foundPet: FoundPetListRow): FoundPetListItem {
+    return {
+      ...foundPet,
+      breed: foundPet.breed ?? null,
+      photo_url: foundPet.photo_url ?? null,
+      lat: Number(foundPet.lat),
+      lon: Number(foundPet.lon),
+      found_date: new Date(foundPet.found_date),
+      created_at: new Date(foundPet.created_at),
+      updated_at: new Date(foundPet.updated_at),
+    };
   }
 
   private async sendNoMatchNotification(found: FoundPetCreateDto): Promise<void> {
