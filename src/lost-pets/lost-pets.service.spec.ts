@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { RedisCacheService } from '../cache/cache.service';
 import { LostPet } from '../core/entities/lost-pet.entity';
 import { LostPetsService } from './lost-pets.service';
@@ -121,5 +122,18 @@ describe('LostPetsService', () => {
     expect(lostPetsRepository.create).toHaveBeenCalled();
     expect(lostPetsRepository.save).toHaveBeenCalledWith(createdEntity);
     expect(cacheService.del).toHaveBeenCalledWith('lost-pets:active:list');
+  });
+
+  it('rejects incomplete create payloads before saving', async () => {
+    await expect(
+      service.createLostPet({
+        name: 'max',
+        species: 'dog',
+      } as any),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(lostPetsRepository.create).not.toHaveBeenCalled();
+    expect(lostPetsRepository.save).not.toHaveBeenCalled();
+    expect(cacheService.del).not.toHaveBeenCalled();
   });
 });

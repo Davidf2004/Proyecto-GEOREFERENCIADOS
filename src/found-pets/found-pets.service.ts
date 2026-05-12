@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FoundPet } from 'src/core/entities/found-pet.entity';
@@ -37,6 +37,8 @@ export class FoundPetsService {
   ) {}
 
   async createFoundPet(data: FoundPetCreateDto): Promise<FoundPet> {
+    this.validateCreateFoundPet(data);
+
     const foundPet = this.foundPetsRepository.create({
       species: data.species,
       breed: data.breed,
@@ -172,6 +174,36 @@ export class FoundPetsService {
 
     if (!emailSent) {
       this.logger.warn(`No-match notification email could not be sent for finder ${found.finder_email}`);
+    }
+  }
+
+  private validateCreateFoundPet(data: FoundPetCreateDto): void {
+    const requiredTextFields: Array<keyof FoundPetCreateDto> = [
+      'species',
+      'color',
+      'size',
+      'description',
+      'finder_name',
+      'finder_email',
+      'finder_phone',
+      'address',
+    ];
+
+    const missingFields = requiredTextFields.filter((field) => {
+      const value = data[field];
+      return typeof value !== 'string' || value.trim().length === 0;
+    });
+
+    if (!Number.isFinite(data.lat)) {
+      missingFields.push('lat');
+    }
+
+    if (!Number.isFinite(data.lon)) {
+      missingFields.push('lon');
+    }
+
+    if (missingFields.length) {
+      throw new BadRequestException(`Missing or invalid required fields: ${missingFields.join(', ')}`);
     }
   }
 }

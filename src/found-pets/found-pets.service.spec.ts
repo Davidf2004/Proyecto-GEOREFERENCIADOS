@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { RedisCacheService } from '../cache/cache.service';
 import { FoundPet } from '../core/entities/found-pet.entity';
 import { LostPet } from '../core/entities/lost-pet.entity';
@@ -151,5 +152,19 @@ describe('FoundPetsService', () => {
     expect(sql).toContain('ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography');
     expect(params).toEqual([dto.lon, dto.lat, 500]);
     expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects incomplete create payloads before saving or notifying', async () => {
+    await expect(
+      service.createFoundPet({
+        species: 'dog',
+      } as any),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(foundPetsRepository.create).not.toHaveBeenCalled();
+    expect(foundPetsRepository.save).not.toHaveBeenCalled();
+    expect(cacheService.del).not.toHaveBeenCalled();
+    expect(lostPetsRepository.query).not.toHaveBeenCalled();
+    expect(emailService.sendEmail).not.toHaveBeenCalled();
   });
 });

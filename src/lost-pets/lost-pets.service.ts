@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LostPet } from 'src/core/entities/lost-pet.entity';
@@ -25,6 +25,8 @@ export class LostPetsService {
   ) {}
 
   async createLostPet(data: LostPetCreateDto): Promise<LostPet> {
+    this.validateCreateLostPet(data);
+
     const lostPet = this.lostPetsRepository.create({
       name: data.name,
       species: data.species,
@@ -92,5 +94,36 @@ export class LostPetsService {
       updated_at: new Date(lostPet.updated_at),
     };
   }
-}
 
+  private validateCreateLostPet(data: LostPetCreateDto): void {
+    const requiredTextFields: Array<keyof LostPetCreateDto> = [
+      'name',
+      'species',
+      'breed',
+      'color',
+      'size',
+      'description',
+      'owner_name',
+      'owner_email',
+      'owner_phone',
+      'address',
+    ];
+
+    const missingFields = requiredTextFields.filter((field) => {
+      const value = data[field];
+      return typeof value !== 'string' || value.trim().length === 0;
+    });
+
+    if (!Number.isFinite(data.lat)) {
+      missingFields.push('lat');
+    }
+
+    if (!Number.isFinite(data.lon)) {
+      missingFields.push('lon');
+    }
+
+    if (missingFields.length) {
+      throw new BadRequestException(`Missing or invalid required fields: ${missingFields.join(', ')}`);
+    }
+  }
+}
