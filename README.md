@@ -233,17 +233,3 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...;IngestionEndpoint=.
 ```
 
 Si la variable esta vacia, la API funciona normalmente sin Application Insights.
-
-## Guion sugerido para el video
-
-1. Mostrar el repositorio y el `README.md`.
-2. Mostrar `.env` ocultando secretos.
-3. Hacer un commit con los cambios.
-4. Hacer push a `main`.
-5. Mostrar la ejecucion del workflow en GitHub Actions.
-6. Mostrar la imagen publicada en `ghcr.io`.
-7. Levantar la API.
-8. Ejecutar un `POST /api/lost-pets`.
-9. Ejecutar un `POST /api/found-pets` con coordenadas a menos de 500 m.
-10. Mostrar el endpoint de busqueda por radio funcionando y la notificacion por correo.
-11. Llamar `GET /api/lost-pets` y `GET /api/found-pets` para ensenar el listado cacheado.
