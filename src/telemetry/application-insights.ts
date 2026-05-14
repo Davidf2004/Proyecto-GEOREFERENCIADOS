@@ -1,4 +1,4 @@
-import applicationInsights from 'applicationinsights';
+import * as appInsights from 'applicationinsights';
 
 let isTelemetryInitialized = false;
 
@@ -7,7 +7,7 @@ export function setupApplicationInsights(connectionString?: string): void {
     return;
   }
 
-  applicationInsights
+  appInsights
     .setup(connectionString)
     .setAutoCollectRequests(true)
     .setAutoCollectPerformance(true, true)
@@ -15,7 +15,7 @@ export function setupApplicationInsights(connectionString?: string): void {
     .setAutoCollectDependencies(true)
     .setAutoCollectConsole(true, true)
     .setUseDiskRetryCaching(true)
-    .setSendLiveMetrics(false)
+    .setSendLiveMetrics(true)
     .start();
 
   isTelemetryInitialized = true;
