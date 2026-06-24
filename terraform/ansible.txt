@@ -1,0 +1,26 @@
+1. Crear la red de docker donde van a correr todos los contenedores
+    docker network create petradar-network
+
+2. Crear la estructura de carpetas en el servidor
+    --- /
+        | -- containers
+            | -- postgres
+            | -- redis
+            | -- petradar-api
+            | -- wireguard
+
+mkdir -p /containers/postgres
+mkdir -p /containers/redis
+mkdir -p /containers/petradar-api
+mkdir -p /containers/wireguard
+
+3. Loguearme al registry de github
+    docker login ghcr.io -u <username> -p <token>
+
+4. Crear los docker-compose.yml y los .env
+    Usar los archivos de referencia en deploy/containers/ del repositorio.
+
+5. Levantar los contenedores
+    cd /containers/postgres && docker compose up -d
+    cd /containers/redis && docker compose up -d
+    cd /containers/petradar-api && docker compose up -d

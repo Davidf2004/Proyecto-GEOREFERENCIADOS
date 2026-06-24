@@ -1,0 +1,28 @@
+services:
+  app:
+    image: ghcr.io/davidf2004/proyecto-georeferenciados:latest
+    container_name: petradar-api
+    restart: unless-stopped
+    networks:
+      - petradar-network
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3000}
+      DB_HOST: petradar-postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_ENABLED: 'true'
+      REDIS_HOST: petradar-redis
+      REDIS_PORT: 6379
+      REDIS_TTL_SECONDS: ${REDIS_TTL_SECONDS:-60}
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING:-}
+    command: npm run start:prod:with-migrations
+    ports:
+      - '${PORT:-3000}:3000'
+
+networks:
+  petradar-network:
+    external: true

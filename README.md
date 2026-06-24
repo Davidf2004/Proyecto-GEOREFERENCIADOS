@@ -233,3 +233,65 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...;IngestionEndpoint=.
 ```
 
 Si la variable esta vacia, la API funciona normalmente sin Application Insights.
+
+## Infraestructura Azure (Terraform)
+
+Este proyecto integra la infraestructura de [612-IncidentAPI-Infrastructure](https://github.com/JFRClasses/612-IncidentAPI-Infrastructure) adaptada para PetsRadar.
+
+La carpeta `terraform/` provisiona en Azure (contenido de [612-IncidentAPI-Infrastructure](https://github.com/JFRClasses/612-IncidentAPI-Infrastructure)):
+
+- Resource group
+- Application Insights (telemetria)
+- Linux VM con Docker y Docker Compose
+- Red virtual, subnet, IP publica y reglas de seguridad (SSH, HTTP, HTTPS, API 3000)
+- Guia de despliegue manual en `terraform/ansible.txt`
+- Configuracion por contenedor en `deploy/containers/`
+
+### Requisitos
+
+- [Terraform](https://www.terraform.io/downloads) 1.5+
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) con sesion activa (`az login`)
+- Clave SSH en `terraform/keys/petradar_key` y `terraform/keys/petradar_key.pub`
+
+Si no existen las claves, genera un par nuevo:
+
+```bash
+mkdir -p terraform/keys
+ssh-keygen -t ed25519 -f terraform/keys/petradar_key -C petradar-deploy
+```
+
+### Provisionar infraestructura
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edita terraform.tfvars con ENVIRONMENT, LOCATION y VM_SIZE
+
+terraform init
+terraform plan
+terraform apply
+```
+
+Tras el despliegue:
+
+```bash
+terraform output public_ip
+terraform output -raw app_insights_connection_string
+```
+
+Usa el connection string de Application Insights en el `.env` de produccion.
+
+### Desplegar la API en la VM
+
+Consulta la guia completa en `deploy/README.md`. Resumen:
+
+1. SSH a la VM: `ssh -i terraform/keys/petradar_key adminuser@<PUBLIC_IP>`
+2. Copia `deploy/compose.prod.yaml` y `deploy/.env` al servidor
+3. Login en GHCR y levanta el stack:
+
+```bash
+docker login ghcr.io -u <username> -p <token>
+docker compose up -d
+```
+
+La imagen de produccion se publica en `ghcr.io/davidf2004/proyecto-georeferenciados` mediante el workflow `.github/workflows/docker-publish.yml`.
