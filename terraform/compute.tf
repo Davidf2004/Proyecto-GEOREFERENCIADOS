@@ -1,5 +1,5 @@
 resource "azurerm_linux_virtual_machine" "petradar_vm" {
-  name                = "612-vm-petradar-api-${var.ENVIRONMENT}"
+  name                = "davidpetsradar-vm-${var.ENVIRONMENT}"
   resource_group_name = azurerm_resource_group.petradar_rg.name
   location            = var.LOCATION
   size                = var.VM_SIZE

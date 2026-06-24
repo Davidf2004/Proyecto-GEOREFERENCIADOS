@@ -6,12 +6,12 @@
         | -- containers
             | -- postgres
             | -- redis
-            | -- petradar-api
+            | -- davidpetsradar-api
             | -- wireguard
 
 mkdir -p /containers/postgres
 mkdir -p /containers/redis
-mkdir -p /containers/petradar-api
+mkdir -p /containers/davidpetsradar-api
 mkdir -p /containers/wireguard
 
 3. Loguearme al registry de github

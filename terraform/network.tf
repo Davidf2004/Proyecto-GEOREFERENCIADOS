@@ -1,26 +1,26 @@
 resource "azurerm_virtual_network" "petradar_vnet" {
-  name                = "612-vnet-petradar-api-${var.ENVIRONMENT}"
+  name                = "davidpetsradar-vnet-${var.ENVIRONMENT}"
   location            = var.LOCATION
   resource_group_name = azurerm_resource_group.petradar_rg.name
   address_space       = ["10.0.0.0/16"]
 }
 
 resource "azurerm_subnet" "petradar_subnet" {
-  name                 = "612-subnet-petradar-api-${var.ENVIRONMENT}"
+  name                 = "davidpetsradar-subnet-${var.ENVIRONMENT}"
   resource_group_name  = azurerm_resource_group.petradar_rg.name
   virtual_network_name = azurerm_virtual_network.petradar_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
 resource "azurerm_public_ip" "petradar_ip" {
-  name                = "612-petradar-api-ip-${var.ENVIRONMENT}"
+  name                = "davidpetsradar-ip-${var.ENVIRONMENT}"
   resource_group_name = azurerm_resource_group.petradar_rg.name
   location            = var.LOCATION
   allocation_method   = "Static"
 }
 
 resource "azurerm_network_interface" "petradar_nic" {
-  name                = "612-nic-petradar-api-${var.ENVIRONMENT}"
+  name                = "davidpetsradar-nic-${var.ENVIRONMENT}"
   location            = var.LOCATION
   resource_group_name = azurerm_resource_group.petradar_rg.name
 
@@ -33,7 +33,7 @@ resource "azurerm_network_interface" "petradar_nic" {
 }
 
 resource "azurerm_network_security_group" "petradar_sg" {
-  name                = "612-sg-petradar-api-${var.ENVIRONMENT}"
+  name                = "davidpetsradar-nsg-${var.ENVIRONMENT}"
   location            = var.LOCATION
   resource_group_name = azurerm_resource_group.petradar_rg.name
 
